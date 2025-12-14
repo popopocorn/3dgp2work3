@@ -52,6 +52,7 @@ bool CGameFramework::OnCreate(HINSTANCE hInstance, HWND hMainWnd)
 	CreateRtvAndDsvDescriptorHeaps();
 	CreateSwapChain();
 	CreateDepthStencilView();
+	CreateShadowmapResources();
 
 	CoInitialize(NULL);
 
@@ -205,7 +206,7 @@ void CGameFramework::CreateRtvAndDsvDescriptorHeaps()
 	hResult = m_pd3dDevice->CreateDescriptorHeap(&d3dDescriptorHeapDesc, __uuidof(ID3D12DescriptorHeap), (void **)&m_pd3dDsvDescriptorHeap);
 }
 
-void CGameFramework::CreateShdowmapResources()
+void CGameFramework::CreateShadowmapResources()
 {
 	HRESULT hResult;
 
@@ -628,6 +629,29 @@ void CGameFramework::FrameAdvance()
 	d3dResourceBarrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
 	m_pd3dCommandList->ResourceBarrier(1, &d3dResourceBarrier);
 
+	//shadow map pass
+	/*m_pLightCamera->updateLight(m_pCamera);
+	TransitionShadowMap(D3D12_RESOURCE_STATE_DEPTH_WRITE);
+	D3D12_CPU_DESCRIPTOR_HANDLE d3dShadowDsvCPUHandle =
+		m_pd3dShadowWriteHeap->GetCPUDescriptorHandleForHeapStart();
+	m_pd3dCommandList->OMSetRenderTargets(0, nullptr, FALSE, &d3dShadowDsvCPUHandle);
+	m_pd3dCommandList->ClearDepthStencilView(
+		d3dShadowDsvCPUHandle,
+		D3D12_CLEAR_FLAG_DEPTH,
+		1.0f,
+		0,
+		0,
+		NULL
+	);
+	if (m_pScene.back())
+		m_pScene.back()->Render(m_pd3dCommandList, m_pLightCamera, RenderPass::SHADOW);
+
+	if (m_pPlayer)
+		m_pPlayer->Render(m_pd3dCommandList, m_pLightCamera, RenderPass::SHADOW);
+
+	TransitionShadowMap(D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);*/
+
+	//mainpass
 	D3D12_CPU_DESCRIPTOR_HANDLE d3dRtvCPUDescriptorHandle = m_pd3dRtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
 	d3dRtvCPUDescriptorHandle.ptr += (m_nSwapChainBufferIndex * gnRtvDescriptorIncrementSize);
 

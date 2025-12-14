@@ -20,7 +20,7 @@ public:
 	void CreateCommandQueueAndList();
 
 	void CreateRtvAndDsvDescriptorHeaps();
-	void CreateShdowmapResources();
+	void CreateShadowmapResources();
 	void TransitionShadowMap(D3D12_RESOURCE_STATES newState);
 
 	void CreateRenderTargetViews();
