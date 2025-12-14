@@ -48,6 +48,10 @@ extern float FullScreenHeight;
 #define FRAME_BUFFER_WIDTH		1280
 #define FRAME_BUFFER_HEIGHT		720
 
+
+static const UINT SHADOW_MAP_SIZE = 2048;
+
+
 using namespace DirectX;
 using namespace DirectX::PackedVector;
 

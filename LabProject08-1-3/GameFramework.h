@@ -20,6 +20,8 @@ public:
 	void CreateCommandQueueAndList();
 
 	void CreateRtvAndDsvDescriptorHeaps();
+	void CreateShdowmapResources();
+	void TransitionShadowMap(D3D12_RESOURCE_STATES newState);
 
 	void CreateRenderTargetViews();
 	void CreateDepthStencilView();
@@ -67,6 +69,11 @@ private:
 	ID3D12Resource				*m_pd3dDepthStencilBuffer = NULL;
 	ID3D12DescriptorHeap		*m_pd3dDsvDescriptorHeap = NULL;
 
+	ID3D12Resource*				m_pd3dShadowmap = NULL;
+	ID3D12DescriptorHeap*		m_pd3dShadowWriteHeap = NULL;	//dsv
+	ID3D12DescriptorHeap*		m_pd3dShadowReadHeap = NULL;	//srv
+	D3D12_RESOURCE_STATES		m_ShadowMapState = D3D12_RESOURCE_STATE_DEPTH_WRITE;
+
 	ID3D12CommandAllocator		*m_pd3dCommandAllocator = NULL;
 	ID3D12CommandQueue			*m_pd3dCommandQueue = NULL;
 	ID3D12GraphicsCommandList	*m_pd3dCommandList = NULL;
@@ -88,3 +95,10 @@ private:
 
 	_TCHAR						m_pszFrameRate[70];
 };
+
+enum RenderPass : size_t {
+	MAIN,
+	SHADOW,
+	MOTIONBLUR
+};
+
