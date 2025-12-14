@@ -117,7 +117,6 @@ public:
 	ID3D12RootSignature*						m_pd3dGraphicsRootSignature;
 	std::vector<CGameObject*>					m_ppObjects;
 	std::vector<CGameObject*>					bullets;
-	void										fire(CPlayer*);
 	//int								m_nObjects = 0;
 protected:
 

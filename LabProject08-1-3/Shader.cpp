@@ -532,17 +532,6 @@ void CObjectsShader::Render(ID3D12GraphicsCommandList *pd3dCommandList, CCamera 
 	}
 }
 
-void CObjectsShader::fire(CPlayer* player)
-{
-	CGameObject* missile = new Missile();
-	CGameObject* mis = CGameObject::LoadGeometryFromFile(m_pd3dDevice, m_pd3dCommandList, m_pd3dGraphicsRootSignature, "Model/MLRS_Rocket.bin", this);
-	missile->SetChild(mis);
-
-	((Missile*)missile)->setPos(player);
-	missile->SetPosition(player->GetShoot());
-	bullets.push_back(missile);
-}
-
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 CPlayerShader::CPlayerShader()

@@ -478,7 +478,6 @@ bool CScene::OnProcessingKeyboardMessage(HWND hWnd, UINT nMessageID, WPARAM wPar
 			}
 			break;
 		case VK_CONTROL:
-			((CObjectsShader*)m_ppShaders[0])->fire(m_pPlayer);
 			break;
 		default:
 			break;
