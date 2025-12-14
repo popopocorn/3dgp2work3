@@ -33,6 +33,8 @@ CGameFramework::CGameFramework()
 	m_nWndClientWidth = FRAME_BUFFER_WIDTH;
 	m_nWndClientHeight = FRAME_BUFFER_HEIGHT;
 	m_pPlayer = NULL;
+	m_pLightCamera = new LightCamera(XMFLOAT3(1.0f, 0.0f, 1.0f));
+
 
 	_tcscpy_s(m_pszFrameRate, _T("LabProject ("));
 	startScene = new CScene(this);
@@ -53,6 +55,7 @@ bool CGameFramework::OnCreate(HINSTANCE hInstance, HWND hMainWnd)
 	CreateSwapChain();
 	CreateDepthStencilView();
 	CreateShadowmapResources();
+	m_pLightCamera->CreateShaderVariables(m_pd3dDevice, m_pd3dCommandList);
 
 	CoInitialize(NULL);
 
@@ -630,7 +633,7 @@ void CGameFramework::FrameAdvance()
 	m_pd3dCommandList->ResourceBarrier(1, &d3dResourceBarrier);
 
 	//shadow map pass
-	/*m_pLightCamera->updateLight(m_pCamera);
+	m_pLightCamera->updateLight(m_pCamera);
 	TransitionShadowMap(D3D12_RESOURCE_STATE_DEPTH_WRITE);
 	D3D12_CPU_DESCRIPTOR_HANDLE d3dShadowDsvCPUHandle =
 		m_pd3dShadowWriteHeap->GetCPUDescriptorHandleForHeapStart();
@@ -649,7 +652,7 @@ void CGameFramework::FrameAdvance()
 	if (m_pPlayer)
 		m_pPlayer->Render(m_pd3dCommandList, m_pLightCamera, RenderPass::SHADOW);
 
-	TransitionShadowMap(D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);*/
+	TransitionShadowMap(D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 
 	//mainpass
 	D3D12_CPU_DESCRIPTOR_HANDLE d3dRtvCPUDescriptorHandle = m_pd3dRtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();

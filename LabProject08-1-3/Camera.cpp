@@ -302,3 +302,82 @@ void CThirdPersonCamera::SetLookAt(XMFLOAT3& xmf3LookAt)
 	m_xmf3Up = XMFLOAT3(mtxLookAt._12, mtxLookAt._22, mtxLookAt._32);
 	m_xmf3Look = XMFLOAT3(mtxLookAt._13, mtxLookAt._23, mtxLookAt._33);
 }
+
+
+void LightCamera::updateLight(CCamera* pcamera)
+{
+	// 1. 플레이어 카메라 프러스텀 코너 (World Space)
+	XMFLOAT3 frustumCornersWS[8];
+	pcamera->GetFrustum().GetCorners(frustumCornersWS);
+
+	// 2. 고정된 라이트 방향 (Directional Light)
+	XMVECTOR lightDir = XMVector3Normalize(XMLoadFloat3(&m_vLightDirection));
+	XMVECTOR up = XMVectorSet(0, 1, 0, 0);
+
+	// 3. 프러스텀 중심 계산
+	XMVECTOR frustumCenter = XMVectorZero();
+	for (int i = 0; i < 8; ++i)
+		frustumCenter += XMLoadFloat3(&frustumCornersWS[i]);
+	frustumCenter /= 8.0f;
+
+	// ----------------------------------------------------
+	// 4. 방향만을 위한 임시 Light View (위치 = 원점)
+	// ----------------------------------------------------
+	XMMATRIX lightViewRotation = XMMatrixLookToLH(
+		XMVectorZero(),
+		lightDir,
+		up
+	);
+
+	// ----------------------------------------------------
+	// 5. 프러스텀 코너를 Light Rotation Space로 변환
+	//    → Z 범위 계산
+	// ----------------------------------------------------
+	float minX = FLT_MAX, minY = FLT_MAX, minZ = FLT_MAX;
+	float maxX = -FLT_MAX, maxY = -FLT_MAX, maxZ = -FLT_MAX;
+
+	for (int i = 0; i < 8; ++i)
+	{
+		XMVECTOR v = XMVector3TransformCoord(
+			XMLoadFloat3(&frustumCornersWS[i]),
+			lightViewRotation
+		);
+
+		minX = min(minX, XMVectorGetX(v));
+		minY = min(minY, XMVectorGetY(v));
+		minZ = min(minZ, XMVectorGetZ(v));
+
+		maxX = max(maxX, XMVectorGetX(v));
+		maxY = max(maxY, XMVectorGetY(v));
+		maxZ = max(maxZ, XMVectorGetZ(v));
+	}
+
+	// 6. Z 여유값 (shadow clipping 방지)
+	constexpr float zMargin = 20.0f;
+	minZ -= zMargin;
+	maxZ += zMargin;
+
+	// ----------------------------------------------------
+	// 7. Light 위치 자동 결정 (distance 제거!)
+	// ----------------------------------------------------
+	// 프러스텀 전체가 Z 범위 안에 들어오도록 뒤로 이동
+	XMVECTOR lightPos = frustumCenter - lightDir * maxZ;
+
+	// 8. 최종 Light View Matrix
+	XMMATRIX lightView = XMMatrixLookAtLH(
+		lightPos,
+		frustumCenter,
+		up
+	);
+	XMStoreFloat4x4(&m_xmf4x4View, lightView);
+
+	// ----------------------------------------------------
+	// 9. Orthographic Projection (프러스텀에 딱 맞게)
+	// ----------------------------------------------------
+	XMMATRIX lightProj = XMMatrixOrthographicOffCenterLH(
+		minX, maxX,
+		minY, maxY,
+		minZ, maxZ
+	);
+	XMStoreFloat4x4(&m_xmf4x4Projection, lightProj);
+}

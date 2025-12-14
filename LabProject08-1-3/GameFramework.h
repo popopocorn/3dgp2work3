@@ -90,7 +90,7 @@ private:
 	
 	CPlayer						*m_pPlayer = NULL;
 	CCamera						*m_pCamera = NULL;
-
+	LightCamera*				m_pLightCamera = NULL;
 	POINT						m_ptOldCursorPos = {1500, 150};
 
 	_TCHAR						m_pszFrameRate[70];

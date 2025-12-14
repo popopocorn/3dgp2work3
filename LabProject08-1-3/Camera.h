@@ -137,3 +137,12 @@ public:
 	virtual void SetLookAt(XMFLOAT3& vLookAt);
 };
 
+class LightCamera : public CCamera {
+private:
+	XMFLOAT3 m_vLightDirection;
+public:
+	LightCamera() {};
+	LightCamera(XMFLOAT3 dir) : m_vLightDirection(dir) {};
+
+	void updateLight(CCamera* pcamera);
+};
