@@ -35,7 +35,7 @@ CGameFramework::CGameFramework()
 	m_pPlayer = NULL;
 	
 
-
+	
 	_tcscpy_s(m_pszFrameRate, _T("LabProject ("));
 	
 }
@@ -55,7 +55,7 @@ bool CGameFramework::OnCreate(HINSTANCE hInstance, HWND hMainWnd)
 	CreateSwapChain();
 	CreateDepthStencilView();
 	CreateShadowmapResources();
-	startScene = new CScene(this);;
+	startScene = new CScene(this);
 	m_pLightCamera = new LightCamera(XMFLOAT3(1.0f, 0.0f, 1.0f));
 	m_pLightCamera->CreateShaderVariables(m_pd3dDevice, m_pd3dCommandList);
 	

@@ -304,6 +304,11 @@ void CThirdPersonCamera::SetLookAt(XMFLOAT3& xmf3LookAt)
 }
 
 
+LightCamera::LightCamera(XMFLOAT3 dir)
+{
+	dir = Vector3::Normalize(dir);
+}
+
 void LightCamera::updateLight(CCamera* pcamera)
 {
 	// 1. 플레이어 카메라 프러스텀 코너 (World Space)
