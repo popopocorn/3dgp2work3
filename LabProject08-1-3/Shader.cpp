@@ -266,6 +266,8 @@ void CShader::Render(ID3D12GraphicsCommandList *pd3dCommandList, CCamera *pCamer
 	OnPrepareRender(pd3dCommandList, nPipelineState);
 }
 
+
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 CSkyBoxShader::CSkyBoxShader()
@@ -411,7 +413,15 @@ float Random(float fMin, float fMax)
 	float fRandomValue = Random();
 	return(fMin + fRandomValue * range);
 }
+void CObjectsShader::fire(CPlayer* player)
+{
+	
+	bullets.push_back(new Missile());
+	bullets.back()->SetChild(mis);
+	static_cast<Missile*>(bullets.back())->setPos(player);
 
+	mis->AddRef();
+}
 
 
 XMFLOAT3 RandomPositionInSphere(XMFLOAT3 xmf3Center, float fRadius, int nColumn, int nColumnSpace)
@@ -487,7 +497,7 @@ void CObjectsShader::BuildObjects(ID3D12Device *pd3dDevice, ID3D12GraphicsComman
         }
     }
 
-
+	mis = CGameObject::LoadGeometryFromFile(m_pd3dDevice, m_pd3dCommandList, m_pd3dGraphicsRootSignature, "Model/MLRS_Rocket.bin", this);
 	CreateShaderVariables(pd3dDevice, pd3dCommandList);
 }
 
@@ -666,4 +676,14 @@ bool isInFrustum(CGameObject* obj, const BoundingFrustum& frs)
 	if (obj->m_pChild && isInFrustum(obj->m_pChild, frs))return true;
 	if (frs.Intersects(obj->m_xmWorldOOBB)) return true;
 	return false;
+}
+
+D3D12_SHADER_BYTECODE Debugshader::CreateVertexShader()
+{
+	return(CShader::CompileShaderFromFile(L"Shaders.hlsl", "VSTextureToScreen", "vs_5_1", &m_pd3dVertexShaderBlob));
+}
+
+D3D12_SHADER_BYTECODE Debugshader::CreatePixelShader()
+{
+	return(CShader::CompileShaderFromFile(L"Shaders.hlsl", "PSTextureToScreen", "ps_5_1", &m_pd3dPixelShaderBlob));
 }

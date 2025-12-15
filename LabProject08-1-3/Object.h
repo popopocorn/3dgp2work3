@@ -152,6 +152,7 @@ class CGameObject
 {
 private:
 	int								m_nReferences = 0;
+	bool							alive = true;
 
 public:
 	void AddRef();
@@ -345,6 +346,6 @@ class Missile : public CGameObject {
 public:
 	Missile();
 	~Missile() {};
-	void setPos(CPlayer* player);
+	void setPos(CPlayer* player =NULL);
 	virtual void Animate(float fTimeElapsed, XMFLOAT4X4* pxmf4x4Parent = NULL);
 };

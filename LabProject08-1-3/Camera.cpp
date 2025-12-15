@@ -153,6 +153,20 @@ void CCamera::SetViewportsAndScissorRects(ID3D12GraphicsCommandList *pd3dCommand
 	pd3dCommandList->RSSetScissorRects(1, &m_d3dScissorRect);
 }
 
+XMFLOAT4X4 CCamera::GetViewProjectionMatrix()
+{
+
+	XMMATRIX vp =
+		XMMatrixMultiply(
+			XMLoadFloat4x4(&m_xmf4x4View),
+			XMLoadFloat4x4(&m_xmf4x4Projection)
+		);
+
+	XMFLOAT4X4 out;
+	XMStoreFloat4x4(&out, XMMatrixTranspose(vp));
+	return out;
+}
+
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // CSpaceShipCamera
 

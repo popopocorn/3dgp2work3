@@ -472,7 +472,7 @@ void CGameObject::Render(ID3D12GraphicsCommandList* pd3dCommandList, CCamera* pC
 		{
 			if (m_ppMaterials[i])
 			{
-				if (m_ppMaterials[i]->m_pShader) m_ppMaterials[i]->m_pShader->Render(pd3dCommandList, pCamera);
+				if (m_ppMaterials[i]->m_pShader) m_ppMaterials[i]->m_pShader->Render(pd3dCommandList, pCamera, psoIdx);
 				m_ppMaterials[i]->UpdateShaderVariables(pd3dCommandList);
 			}
 
@@ -486,7 +486,7 @@ void CGameObject::Render(ID3D12GraphicsCommandList* pd3dCommandList, CCamera* pC
 	{
 		if ((m_nMaterials == 1) && (m_ppMaterials[0]))
 		{
-			if (m_ppMaterials[0]->m_pShader) m_ppMaterials[0]->m_pShader->Render(pd3dCommandList, pCamera);
+			if (m_ppMaterials[0]->m_pShader) m_ppMaterials[0]->m_pShader->Render(pd3dCommandList, pCamera, psoIdx);
 			m_ppMaterials[0]->UpdateShaderVariables(pd3dCommandList);
 		}
 
@@ -1125,28 +1125,34 @@ void UIObject::setBox()
 
 Missile::Missile()
 {
+	XMStoreFloat4x4(&m_xmf4x4Transform, XMMatrixIdentity());
+	XMStoreFloat4x4(&m_xmf4x4World, XMMatrixIdentity());
 }
+
 
 void Missile::setPos(CPlayer* player)
 {
-	m_xmf4x4Transform = player->m_xmf4x4Transform;
-	m_xmf4x4World = player->m_xmf4x4Transform;
+	if(player)
+	{
+		m_xmf4x4Transform = player->m_xmf4x4Transform;
+		m_xmf4x4World = player->m_xmf4x4Transform;
 
-	const int BUFFER_SIZE = 256;
-	wchar_t buffer[BUFFER_SIZE];
-	XMFLOAT3 position = GetPosition();
-	// 3. X, Y, Z 값들을 포맷하여 버퍼에 저장합니다.
-	swprintf_s(buffer, BUFFER_SIZE,
-		L"--- %s Position (X, Y, Z) ---\n"
-		L"X: %10.4f, Y: %10.4f, Z: %10.4f\n",
-		"Pos",
-		position.x, // XMFLOAT3의 X
-		position.y, // XMFLOAT3의 Y
-		position.z  // XMFLOAT3의 Z
-	);
+		const int BUFFER_SIZE = 256;
+		wchar_t buffer[BUFFER_SIZE];
+		XMFLOAT3 position = GetPosition();
+		// 3. X, Y, Z 값들을 포맷하여 버퍼에 저장합니다.
+		swprintf_s(buffer, BUFFER_SIZE,
+			L"--- %s Position (X, Y, Z) ---\n"
+			L"X: %10.4f, Y: %10.4f, Z: %10.4f\n",
+			"Pos",
+			position.x, // XMFLOAT3의 X
+			position.y, // XMFLOAT3의 Y
+			position.z  // XMFLOAT3의 Z
+		);
 
-	// 4. 포맷된 문자열을 디버그 스트림으로 출력합니다.
-	OutputDebugStringW(buffer);
+		// 4. 포맷된 문자열을 디버그 스트림으로 출력합니다.
+		OutputDebugStringW(buffer);
+	}
 
 
 }
@@ -1154,5 +1160,6 @@ void Missile::setPos(CPlayer* player)
 void Missile::Animate(float fTimeElapsed, XMFLOAT4X4* pxmf4x4Parent)
 {
 	
-	MoveForward(fTimeElapsed * 5.0f);
+	MoveForward(fTimeElapsed *1.0f);
+	CGameObject::Animate(fTimeElapsed, pxmf4x4Parent);
 }

@@ -99,6 +99,7 @@ public:
 
 	XMFLOAT4X4 GetViewMatrix() { return(m_xmf4x4View); }
 	XMFLOAT4X4 GetProjectionMatrix() { return(m_xmf4x4Projection); }
+	XMFLOAT4X4 GetViewProjectionMatrix();
 	D3D12_VIEWPORT GetViewport() { return(m_d3dViewport); }
 	D3D12_RECT GetScissorRect() { return(m_d3dScissorRect); }
 	BoundingFrustum GetFrustum() { return cameraFrustum; }

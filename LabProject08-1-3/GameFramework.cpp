@@ -34,8 +34,6 @@ CGameFramework::CGameFramework()
 	m_nWndClientHeight = FRAME_BUFFER_HEIGHT;
 	m_pPlayer = NULL;
 	
-
-	
 	_tcscpy_s(m_pszFrameRate, _T("LabProject ("));
 	
 }
@@ -56,7 +54,7 @@ bool CGameFramework::OnCreate(HINSTANCE hInstance, HWND hMainWnd)
 	CreateDepthStencilView();
 	CreateShadowmapResources();
 	startScene = new CScene(this);
-	m_pLightCamera = new LightCamera(XMFLOAT3(1.0f, 0.0f, 1.0f));
+	m_pLightCamera = new LightCamera(XMFLOAT3(1.0f, -1.0f, 1.0f));
 	m_pLightCamera->CreateShaderVariables(m_pd3dDevice, m_pd3dCommandList);
 	
 	CoInitialize(NULL);
@@ -668,12 +666,44 @@ void CGameFramework::FrameAdvance()
 
 	m_pd3dCommandList->OMSetRenderTargets(1, &d3dRtvCPUDescriptorHandle, TRUE, &d3dDsvCPUDescriptorHandle);
 
+	ID3D12DescriptorHeap* ppHeaps[] = { m_pd3dShadowReadHeap };
+	m_pd3dCommandList->SetDescriptorHeaps(1, ppHeaps);
+	m_pd3dCommandList->SetGraphicsRootDescriptorTable(
+		12,
+		m_pd3dShadowReadHeap->GetGPUDescriptorHandleForHeapStart()
+	);
+
+	XMFLOAT4X4 xmf4x4LightVP =
+		m_pLightCamera->GetViewProjectionMatrix();
+
+	
+	XMMATRIX mLightVP =
+		XMLoadFloat4x4(&xmf4x4LightVP);
+
+	XMFLOAT4X4 xmf4x4LightVP_T;
+	XMStoreFloat4x4(&xmf4x4LightVP_T, mLightVP);
+
+	// Root Parameter Index = 13
+	m_pd3dCommandList->SetGraphicsRoot32BitConstants(
+		13,                 // RootParameterIndex
+		16,                 // Num32BitValues
+		&xmf4x4LightVP_T,   // pSrcData
+		0                   // DestOffsetIn32BitValues
+	);
+
 	if (m_pScene.back()) m_pScene.back()->Render(m_pd3dCommandList, m_pCamera, MAIN);
 
 #ifdef _WITH_PLAYER_TOP
 	m_pd3dCommandList->ClearDepthStencilView(d3dDsvCPUDescriptorHandle, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, NULL);
 #endif
 	if (m_pPlayer) m_pPlayer->Render(m_pd3dCommandList, m_pCamera, MAIN);
+
+	Debugshader* t = new Debugshader();
+	t->CreateShader(m_pd3dDevice, m_pd3dCommandList, m_pScene.back()->GetGraphicsRootSignature());;
+	m_pd3dCommandList->SetPipelineState(t->GetPSO()[0]);
+	m_pd3dCommandList->IASetVertexBuffers(0, 0, nullptr);
+	m_pd3dCommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	m_pd3dCommandList->DrawInstanced(6, 1, 0, 0);
 
 	d3dResourceBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
 	d3dResourceBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
