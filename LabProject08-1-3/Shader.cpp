@@ -215,6 +215,8 @@ void CShader::CreateShader(ID3D12Device *pd3dDevice, ID3D12GraphicsCommandList *
 	m_d3dPipelineStateDesc.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
 
 	HRESULT hResult = pd3dDevice->CreateGraphicsPipelineState(&m_d3dPipelineStateDesc, __uuidof(ID3D12PipelineState), (void **)&m_ppd3dPipelineStates[0]);
+	assert(SUCCEEDED(hResult));
+
 }
 
 void CShader::CreateShadowPSO(ID3D12Device* pd3dDevice, ID3D12GraphicsCommandList* pd3dCommandList, ID3D12RootSignature* pd3dGraphicsRootSignature)
@@ -323,6 +325,8 @@ void CSkyBoxShader::CreateShader(ID3D12Device *pd3dDevice, ID3D12GraphicsCommand
 {
 	m_nPipelineStates = 1;
 	m_ppd3dPipelineStates = new ID3D12PipelineState*[m_nPipelineStates];
+	for (int i = 0; i < m_nPipelineStates; ++i)
+		m_ppd3dPipelineStates[i] = nullptr;
 
 	CShader::CreateShader(pd3dDevice, pd3dCommandList, pd3dGraphicsRootSignature);
 
@@ -374,6 +378,8 @@ void CStandardShader::CreateShader(ID3D12Device *pd3dDevice, ID3D12GraphicsComma
 {
 	m_nPipelineStates = 2;
 	m_ppd3dPipelineStates = new ID3D12PipelineState*[m_nPipelineStates];
+	for (int i = 0; i < m_nPipelineStates; ++i)
+		m_ppd3dPipelineStates[i] = nullptr;
 
 	CShader::CreateShader(pd3dDevice, pd3dCommandList, pd3dGraphicsRootSignature);
 	CShader::CreateShadowPSO(pd3dDevice, pd3dCommandList, pd3dGraphicsRootSignature);
@@ -574,6 +580,8 @@ void CPlayerShader::CreateShader(ID3D12Device *pd3dDevice, ID3D12GraphicsCommand
 {
 	m_nPipelineStates = 2;
 	m_ppd3dPipelineStates = new ID3D12PipelineState * [m_nPipelineStates];
+	for (int i = 0; i < m_nPipelineStates; ++i)
+		m_ppd3dPipelineStates[i] = nullptr;
 
 	CShader::CreateShader(pd3dDevice, pd3dCommandList, pd3dGraphicsRootSignature);
 	CShader::CreateShadowPSO(pd3dDevice, pd3dCommandList, pd3dGraphicsRootSignature);
@@ -625,6 +633,8 @@ void CTerrainShader::CreateShader(ID3D12Device* pd3dDevice, ID3D12GraphicsComman
 {
 	m_nPipelineStates = 2;
 	m_ppd3dPipelineStates = new ID3D12PipelineState * [m_nPipelineStates];
+	for (int i = 0; i < m_nPipelineStates; ++i)
+		m_ppd3dPipelineStates[i] = nullptr;
 
 	CShader::CreateShader(pd3dDevice, pd3dCommandList, pd3dGraphicsRootSignature);
 	CShader::CreateShadowPSO(pd3dDevice, pd3dCommandList, pd3dGraphicsRootSignature);

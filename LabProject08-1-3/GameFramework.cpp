@@ -5,7 +5,7 @@
 #include "stdafx.h"
 #include "GameFramework.h"
 
-CScene* startScene;
+
 
 CGameFramework::CGameFramework()
 {
@@ -33,11 +33,11 @@ CGameFramework::CGameFramework()
 	m_nWndClientWidth = FRAME_BUFFER_WIDTH;
 	m_nWndClientHeight = FRAME_BUFFER_HEIGHT;
 	m_pPlayer = NULL;
-	m_pLightCamera = new LightCamera(XMFLOAT3(1.0f, 0.0f, 1.0f));
+	
 
 
 	_tcscpy_s(m_pszFrameRate, _T("LabProject ("));
-	startScene = new CScene(this);
+	
 }
 
 CGameFramework::~CGameFramework()
@@ -55,8 +55,10 @@ bool CGameFramework::OnCreate(HINSTANCE hInstance, HWND hMainWnd)
 	CreateSwapChain();
 	CreateDepthStencilView();
 	CreateShadowmapResources();
+	startScene = new CScene(this);;
+	m_pLightCamera = new LightCamera(XMFLOAT3(1.0f, 0.0f, 1.0f));
 	m_pLightCamera->CreateShaderVariables(m_pd3dDevice, m_pd3dCommandList);
-
+	
 	CoInitialize(NULL);
 
 	BuildObjects();

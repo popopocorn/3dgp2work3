@@ -143,6 +143,7 @@ private:
 public:
 	LightCamera() {};
 	LightCamera(XMFLOAT3 dir) : m_vLightDirection(dir) {};
+	~LightCamera() {};
 
 	void updateLight(CCamera* pcamera);
 };
