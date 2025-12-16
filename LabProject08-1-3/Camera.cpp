@@ -320,83 +320,117 @@ void CThirdPersonCamera::SetLookAt(XMFLOAT3& xmf3LookAt)
 
 LightCamera::LightCamera(XMFLOAT3 dir)
 {
-	dir = Vector3::Normalize(dir);
+	m_vLightDirection = Vector3::Normalize(dir);
+	m_xmf4x4View = Matrix4x4::Identity();
+	m_xmf4x4Projection = Matrix4x4::Identity();
+	m_d3dViewport = { 0, 0, SHADOW_MAP_SIZE , SHADOW_MAP_SIZE, 0.0f, 1.0f };
+	m_d3dScissorRect = { 0, 0, SHADOW_MAP_SIZE , SHADOW_MAP_SIZE };
+	m_xmf3Position = XMFLOAT3(0.0f, 0.0f, 0.0f);
+	m_xmf3Right = XMFLOAT3(1.0f, 0.0f, 0.0f);
+	m_xmf3Look = XMFLOAT3(0.0f, 0.0f, 1.0f);
+	m_xmf3Up = XMFLOAT3(0.0f, 1.0f, 0.0f);
+	m_fPitch = 0.0f;
+	m_fRoll = 0.0f;
+	m_fYaw = 0.0f;
+	m_xmf3Offset = XMFLOAT3(0.0f, 0.0f, 0.0f);
+	m_fTimeLag = 0.0f;
+	m_xmf3LookAtWorld = XMFLOAT3(0.0f, 0.0f, 0.0f);
+	m_nMode = 0x00;
+	m_pPlayer = NULL;
 }
+
 
 void LightCamera::updateLight(CCamera* pcamera)
 {
-	// 1. 플레이어 카메라 프러스텀 코너 (World Space)
+	// 카메라 프러스텀 코너 가져오기 (월드 좌표)
 	XMFLOAT3 frustumCornersWS[8];
 	pcamera->GetFrustum().GetCorners(frustumCornersWS);
 
-	// 2. 고정된 라이트 방향 (Directional Light)
 	XMVECTOR lightDir = XMVector3Normalize(XMLoadFloat3(&m_vLightDirection));
 	XMVECTOR up = XMVectorSet(0, 1, 0, 0);
 
-	// 3. 프러스텀 중심 계산
+	// 프러스텀 중심 계산
 	XMVECTOR frustumCenter = XMVectorZero();
 	for (int i = 0; i < 8; ++i)
 		frustumCenter += XMLoadFloat3(&frustumCornersWS[i]);
 	frustumCenter /= 8.0f;
 
-	// ----------------------------------------------------
-	// 4. 방향만을 위한 임시 Light View (위치 = 원점)
-	// ----------------------------------------------------
-	XMMATRIX lightViewRotation = XMMatrixLookToLH(
-		XMVectorZero(),
-		lightDir,
-		up
-	);
+	// Light 위치: 프러스텀 중심에서 빛 방향으로 충분히 떨어뜨림
+	XMVECTOR lightPos = frustumCenter - lightDir * 50.0f;
+	XMMATRIX lightView = XMMatrixLookAtLH(lightPos, frustumCenter, up);
+	XMStoreFloat4x4(&m_xmf4x4View, lightView);
 
-	// ----------------------------------------------------
-	// 5. 프러스텀 코너를 Light Rotation Space로 변환
-	//    → Z 범위 계산
-	// ----------------------------------------------------
-	float minX = FLT_MAX, minY = FLT_MAX, minZ = FLT_MAX;
-	float maxX = -FLT_MAX, maxY = -FLT_MAX, maxZ = -FLT_MAX;
+	// 월드 좌표 기준으로 Light Orthographic Projection 계산
+	float lminX = FLT_MAX, lminY = FLT_MAX, lminZ = FLT_MAX;
+	float lmaxX = -FLT_MAX, lmaxY = -FLT_MAX, lmaxZ = -FLT_MAX;
 
 	for (int i = 0; i < 8; ++i)
 	{
-		XMVECTOR v = XMVector3TransformCoord(
-			XMLoadFloat3(&frustumCornersWS[i]),
-			lightViewRotation
-		);
+		XMVECTOR corner = XMLoadFloat3(&frustumCornersWS[i]);
 
-		minX = min(minX, XMVectorGetX(v));
-		minY = min(minY, XMVectorGetY(v));
-		minZ = min(minZ, XMVectorGetZ(v));
+		// Light View로 변환하여 Light Space에서 min/max 계산
+		XMVECTOR cornerLS = XMVector3TransformCoord(corner, lightView);
 
-		maxX = max(maxX, XMVectorGetX(v));
-		maxY = max(maxY, XMVectorGetY(v));
-		maxZ = max(maxZ, XMVectorGetZ(v));
+		lminX = min(lminX, XMVectorGetX(cornerLS));
+		lmaxX = max(lmaxX, XMVectorGetX(cornerLS));
+		lminY = min(lminY, XMVectorGetY(cornerLS));
+		lmaxY = max(lmaxY, XMVectorGetY(cornerLS));
+		lminZ = min(lminZ, XMVectorGetZ(cornerLS));
+		lmaxZ = max(lmaxZ, XMVectorGetZ(cornerLS));
 	}
 
-	// 6. Z 여유값 (shadow clipping 방지)
-	constexpr float zMargin = 20.0f;
-	minZ -= zMargin;
-	maxZ += zMargin;
+	// Z Margin 추가
+	constexpr float zMargin = 10.0f;
+	lminZ -= zMargin;
+	lmaxZ += zMargin;
 
-	// ----------------------------------------------------
-	// 7. Light 위치 자동 결정 (distance 제거!)
-	// ----------------------------------------------------
-	// 프러스텀 전체가 Z 범위 안에 들어오도록 뒤로 이동
-	XMVECTOR lightPos = frustumCenter - lightDir * maxZ;
-
-	// 8. 최종 Light View Matrix
-	XMMATRIX lightView = XMMatrixLookAtLH(
-		lightPos,
-		frustumCenter,
-		up
-	);
-	XMStoreFloat4x4(&m_xmf4x4View, lightView);
-
-	// ----------------------------------------------------
-	// 9. Orthographic Projection (프러스텀에 딱 맞게)
-	// ----------------------------------------------------
 	XMMATRIX lightProj = XMMatrixOrthographicOffCenterLH(
-		minX, maxX,
-		minY, maxY,
-		minZ, maxZ
+		lminX, lmaxX,
+		lminY, lmaxY,
+		lminZ, lmaxZ
 	);
 	XMStoreFloat4x4(&m_xmf4x4Projection, lightProj);
+
+	BoundingFrustum::CreateFromMatrix(cameraFrustumLocal, lightProj); // Projection
+	cameraFrustumLocal.Transform(cameraFrustum, XMMatrixInverse(nullptr, lightView)); // View 역행렬 적용
+}
+
+#include"Scene.h"
+
+void LightCamera::updateLight(const LIGHT& light)
+{
+	if (!light.m_bEnable) return;
+
+	
+	XMVECTOR lightPos = XMLoadFloat3(&light.m_xmf3Position);
+	XMVECTOR lightDir = XMVector3Normalize(XMLoadFloat3(&light.m_xmf3Direction));
+	XMVECTOR up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+
+	
+	XMMATRIX lightView = XMMatrixLookAtLH(lightPos, lightPos + lightDir, up);
+	XMStoreFloat4x4(&m_xmf4x4View, lightView);
+
+	
+	float fNear = 1.0f; 
+	float fFar = 1000; 
+	float fFovY = acosf(light.m_fTheta) * 3.0f; 
+	float fAspect = 1.0f; 
+
+	XMMATRIX lightProj = XMMatrixPerspectiveFovLH(fFovY, fAspect, fNear, fFar);/*
+	float orthoWidth = fFar * tanf(fFovY * 0.5f) * 2.0f;
+	float orthoHeight = orthoWidth / fAspect;
+
+	XMMATRIX lightProj = XMMatrixOrthographicLH(
+		orthoWidth,
+		orthoHeight,
+		fNear,
+		fFar
+	);
+	//*/
+
+	XMStoreFloat4x4(&m_xmf4x4Projection, lightProj);
+
+	// 프러스텀 생성
+	BoundingFrustum::CreateFromMatrix(cameraFrustumLocal, lightProj);
+	cameraFrustumLocal.Transform(cameraFrustum, XMMatrixInverse(nullptr, lightView));
 }

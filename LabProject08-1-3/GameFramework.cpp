@@ -53,7 +53,10 @@ bool CGameFramework::OnCreate(HINSTANCE hInstance, HWND hMainWnd)
 	CreateSwapChain();
 	CreateDepthStencilView();
 	CreateShadowmapResources();
-	startScene = new CScene(this);
+
+
+	startScene = new CScene(this);/*
+	startScene = new MenuScene(this);//*/
 	m_pLightCamera = new LightCamera(XMFLOAT3(1.0f, -1.0f, 1.0f));
 	m_pLightCamera->CreateShaderVariables(m_pd3dDevice, m_pd3dCommandList);
 	
@@ -633,7 +636,12 @@ void CGameFramework::FrameAdvance()
 	m_pd3dCommandList->ResourceBarrier(1, &d3dResourceBarrier);
 
 	//shadow map pass
-	m_pLightCamera->updateLight(m_pCamera);
+	if (m_pScene.back()->m_nLights >= 2) {
+		m_pLightCamera->updateLight(m_pScene.back()->m_pLights[1]);
+	}
+	else {
+		m_pLightCamera->updateLight(m_pCamera);
+	}
 	TransitionShadowMap(D3D12_RESOURCE_STATE_DEPTH_WRITE);
 	D3D12_CPU_DESCRIPTOR_HANDLE d3dShadowDsvCPUHandle =
 		m_pd3dShadowWriteHeap->GetCPUDescriptorHandleForHeapStart();

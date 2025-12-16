@@ -153,6 +153,26 @@ D3D12_RASTERIZER_DESC CShader::CreateRasterizerState()
 	return(d3dRasterizerDesc);
 }
 
+D3D12_RASTERIZER_DESC CShader::CreateRasterizerState4shadow()
+{
+	D3D12_RASTERIZER_DESC d3dRasterizerDesc;
+	::ZeroMemory(&d3dRasterizerDesc, sizeof(D3D12_RASTERIZER_DESC));
+	//	d3dRasterizerDesc.FillMode = D3D12_FILL_MODE_WIREFRAME;
+	d3dRasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID;
+	d3dRasterizerDesc.CullMode = D3D12_CULL_MODE_BACK;
+	d3dRasterizerDesc.FrontCounterClockwise = FALSE;
+	d3dRasterizerDesc.DepthBias = 1000;
+	d3dRasterizerDesc.DepthBiasClamp = 0.0f;
+	d3dRasterizerDesc.SlopeScaledDepthBias = 1.5f;
+	d3dRasterizerDesc.DepthClipEnable = TRUE;
+	d3dRasterizerDesc.MultisampleEnable = FALSE;
+	d3dRasterizerDesc.AntialiasedLineEnable = FALSE;
+	d3dRasterizerDesc.ForcedSampleCount = 0;
+	d3dRasterizerDesc.ConservativeRaster = D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF;
+
+	return(d3dRasterizerDesc);
+}
+
 D3D12_DEPTH_STENCIL_DESC CShader::CreateDepthStencilState()
 {
 	D3D12_DEPTH_STENCIL_DESC d3dDepthStencilDesc;
@@ -221,7 +241,26 @@ void CShader::CreateShader(ID3D12Device *pd3dDevice, ID3D12GraphicsCommandList *
 
 void CShader::CreateShadowPSO(ID3D12Device* pd3dDevice, ID3D12GraphicsCommandList* pd3dCommandList, ID3D12RootSignature* pd3dGraphicsRootSignature)
 {
-	HRESULT hResult;
+	::ZeroMemory(&m_d3dPipelineStateDesc, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
+
+	m_d3dPipelineStateDesc.pRootSignature = pd3dGraphicsRootSignature;
+	m_d3dPipelineStateDesc.VS = CreateVertexShader();
+	m_d3dPipelineStateDesc.PS = CreatePixelShader();
+	m_d3dPipelineStateDesc.RasterizerState = CreateRasterizerState4shadow();
+	m_d3dPipelineStateDesc.BlendState = CreateBlendState();
+	m_d3dPipelineStateDesc.DepthStencilState = CreateDepthStencilState();
+	m_d3dPipelineStateDesc.InputLayout = CreateInputLayout();
+	m_d3dPipelineStateDesc.SampleMask = UINT_MAX;
+	m_d3dPipelineStateDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+	m_d3dPipelineStateDesc.NumRenderTargets = 1;
+	m_d3dPipelineStateDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
+	m_d3dPipelineStateDesc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
+	m_d3dPipelineStateDesc.SampleDesc.Count = 1;
+	m_d3dPipelineStateDesc.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
+
+	HRESULT hResult = pd3dDevice->CreateGraphicsPipelineState(&m_d3dPipelineStateDesc, __uuidof(ID3D12PipelineState), (void**)&m_ppd3dPipelineStates[0]);
+	assert(SUCCEEDED(hResult));
+
 	::ZeroMemory(&m_d3dPipelineStateDesc, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
 
 	m_d3dPipelineStateDesc.pRootSignature = pd3dGraphicsRootSignature;
@@ -383,7 +422,7 @@ void CStandardShader::CreateShader(ID3D12Device *pd3dDevice, ID3D12GraphicsComma
 	for (int i = 0; i < m_nPipelineStates; ++i)
 		m_ppd3dPipelineStates[i] = nullptr;
 
-	CShader::CreateShader(pd3dDevice, pd3dCommandList, pd3dGraphicsRootSignature);
+
 	CShader::CreateShadowPSO(pd3dDevice, pd3dCommandList, pd3dGraphicsRootSignature);
 
 	if (m_pd3dVertexShaderBlob) m_pd3dVertexShaderBlob->Release();
@@ -498,6 +537,14 @@ void CObjectsShader::BuildObjects(ID3D12Device *pd3dDevice, ID3D12GraphicsComman
     }
 
 	mis = CGameObject::LoadGeometryFromFile(m_pd3dDevice, m_pd3dCommandList, m_pd3dGraphicsRootSignature, "Model/MLRS_Rocket.bin", this);
+
+	CGameObject* wall = CGameObject::LoadGeometryFromFile(pd3dDevice, pd3dCommandList, pd3dGraphicsRootSignature, "Model/rew.bin", this);
+	m_ppObjects.push_back(new CSuperCobraObject(pd3dDevice, pd3dCommandList, pd3dGraphicsRootSignature));
+	m_ppObjects.back()->SetChild(wall);
+	wall->AddRef();
+	m_ppObjects.back()->SetPosition(920, 745, 1200);
+
+
 	CreateShaderVariables(pd3dDevice, pd3dCommandList);
 }
 
@@ -593,7 +640,7 @@ void CPlayerShader::CreateShader(ID3D12Device *pd3dDevice, ID3D12GraphicsCommand
 	for (int i = 0; i < m_nPipelineStates; ++i)
 		m_ppd3dPipelineStates[i] = nullptr;
 
-	CShader::CreateShader(pd3dDevice, pd3dCommandList, pd3dGraphicsRootSignature);
+	
 	CShader::CreateShadowPSO(pd3dDevice, pd3dCommandList, pd3dGraphicsRootSignature);
 
 	if (m_pd3dVertexShaderBlob) m_pd3dVertexShaderBlob->Release();
@@ -646,7 +693,7 @@ void CTerrainShader::CreateShader(ID3D12Device* pd3dDevice, ID3D12GraphicsComman
 	for (int i = 0; i < m_nPipelineStates; ++i)
 		m_ppd3dPipelineStates[i] = nullptr;
 
-	CShader::CreateShader(pd3dDevice, pd3dCommandList, pd3dGraphicsRootSignature);
+
 	CShader::CreateShadowPSO(pd3dDevice, pd3dCommandList, pd3dGraphicsRootSignature);
 
 	if (m_pd3dVertexShaderBlob) m_pd3dVertexShaderBlob->Release();

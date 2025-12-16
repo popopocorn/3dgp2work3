@@ -6,6 +6,8 @@
 #define SPACESHIP_CAMERA			0x02
 #define THIRD_PERSON_CAMERA			0x03
 
+
+
 struct VS_CB_CAMERA_INFO
 {
 	XMFLOAT4X4						m_xmf4x4View;
@@ -138,13 +140,16 @@ public:
 	virtual void SetLookAt(XMFLOAT3& vLookAt);
 };
 
+struct LIGHT;
+
 class LightCamera : public CCamera {
 private:
 	XMFLOAT3 m_vLightDirection;
 public:
-	LightCamera() { m_vLightDirection = XMFLOAT3(); };
+	LightCamera() : CCamera(){ m_vLightDirection = XMFLOAT3(); };
 	LightCamera(XMFLOAT3 dir);
 	~LightCamera() {};
 
 	void updateLight(CCamera* pcamera);
+	void updateLight(const LIGHT& light);
 };

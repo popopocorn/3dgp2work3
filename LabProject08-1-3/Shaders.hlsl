@@ -58,7 +58,7 @@ struct VS_STANDARD_OUTPUT
 };
 
 Texture2D<float> gtxtShadowMap : register(t17);
-SamplerState gShadowSampler : register(s2);
+SamplerComparisonState gShadowSampler : register(s2);
 
 cbuffer cbLightCamera : register(b5)
 {
@@ -85,19 +85,33 @@ VS_STANDARD_OUTPUT VSStandard(VS_STANDARD_INPUT input)
 // Shadow 계산 함수
 float CalcShadow(float4 positionLight)
 {
-    float3 proj = positionLight.xyz / positionLight.w; // NDC
-    float2 shadowUV = proj.xy * 0.5f + 0.5f; // [0,1]로 변환
+    // NDC 공간으로 변환
+    float3 proj = positionLight.xyz / positionLight.w;
+
+    // UV 변환 (Y 반전)
+    float2 shadowUV;
+    shadowUV.x = proj.x * 0.5f + 0.5f;
+    shadowUV.y = 1.0f - (proj.y * 0.5f + 0.5f); // <- Y 반전
+
     float shadowDepth = proj.z;
 
-    // 범위 밖이면 그림자 없음
-    if (shadowUV.x < 0 || shadowUV.x > 1 ||
-        shadowUV.y < 0 || shadowUV.y > 1 ||
-        shadowDepth < 0 || shadowDepth > 1)
+    // 프러스터 범위 밖이면 그림자 없음
+    if (shadowUV.x < 0.0f || shadowUV.x > 1.0f ||
+        shadowUV.y < 0.0f || shadowUV.y > 1.0f ||
+        shadowDepth < 0.0f || shadowDepth > 1.0f)
         return 1.0f;
 
-    float bias = 0.0015f; // 그림자 z-bias
-    return gtxtShadowMap.Sample(gShadowSampler, shadowUV);
+    // Shader bias 적용
+    float bias = 0.0015f;
+
+    // SampleCmpLevelZero 사용: 그림자 깊이 비교 (shadowDepth - bias)
+    float shadow = gtxtShadowMap.SampleCmpLevelZero(gShadowSampler, shadowUV, shadowDepth - bias);
+
+    return shadow;
 }
+
+
+
 
 float4 PSStandard(VS_STANDARD_OUTPUT input) : SV_TARGET
 {
@@ -128,10 +142,12 @@ float4 PSStandard(VS_STANDARD_OUTPUT input) : SV_TARGET
         normalW = normalize(mul(vNormal, TBN));
     }
 
+    float shadow = CalcShadow(input.positionLight);
+    
     float4 lighting = Lighting(input.positionW, normalW, gvCameraPosition, gMaterial);
 
     // 그림자 계산
-    float shadow = CalcShadow(input.positionLight);
+    
 
     // 최종 색상에 그림자 적용
     float4 finalColor = cAlbedoColor * lighting;
@@ -361,10 +377,9 @@ VS_TEXTURED_OUTPUT VSTextureToScreen(uint nVertexID : SV_VertexID)
 
     return output;
 }
-
 float4 PSTextureToScreen(VS_TEXTURED_OUTPUT input) : SV_TARGET
 {
-    // SampleCmpLevelZero 사용: comparison value = 0.0
-    float depth = gtxtShadowMap.Sample(gShadowSampler, input.uv);
+    // mip level 0 사용
+    float depth = gtxtShadowMap.Sample(gssWrap, input.uv);
     return float4(depth, depth, depth, 1.0f);
 }
